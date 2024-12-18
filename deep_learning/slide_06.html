@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Slide 6</title>
+<style>
+    body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f9f9f9;
+    }
+    .slide-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 2rem;
+        box-sizing: border-box;
+    }
+    header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    header h1 {
+        font-size: 2rem;
+        margin: 0;
+        color: #333;
+    }
+    main {
+        max-width: 800px;
+        width: 100%;
+        background: #fff;
+        padding: 2rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    main h2 {
+        font-size: 1.5rem;
+        margin-top: 0;
+    }
+    main p {
+        line-height: 1.6;
+        margin-bottom: 1em;
+        color: #444;
+    }
+    footer {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+        color: #555;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <header>
+        <h1>Introduction to Deep Learning</h1>
+    </header>
+    <main>
+        <div class="slide">
+    <h2>Recurrent Neural Networks (RNNs)</h2>
+    <p>Recurrent Neural Networks are specialized deep learning architectures designed to process sequential data by maintaining an internal memory state, making them particularly effective for tasks involving time series, natural language, and other sequential patterns.</p>
+    
+    <ul>
+        <li><strong>Sequential Processing:</strong> Unlike feedforward networks, RNNs can handle inputs of variable length and maintain context through internal memory</li>
+        
+        <li><strong>Key Components:</strong>
+            <ul>
+                <li>Hidden state that carries information across time steps</li>
+                <li>Feedback loops that allow information to persist</li>
+                <li>Shared parameters across time steps</li>
+            </ul>
+        </li>
+        
+        <li><strong>Applications:</strong>
+            <ul>
+                <li>Natural Language Processing (text generation, translation)</li>
+                <li>Speech Recognition</li>
+                <li>Time Series Prediction</li>
+                <li>Music Generation</li>
+            </ul>
+        </li>
+        
+        <li><strong>Variants:</strong>
+            <ul>
+                <li>LSTM (Long Short-Term Memory)</li>
+                <li>GRU (Gated Recurrent Unit)</li>
+                <li>Bidirectional RNNs</li>
+            </ul>
+        </li>
+    </ul>
+</div>
+    </main>
+    <footer>
+        
+    </footer>
+</div>
+</body>
+</html>
+

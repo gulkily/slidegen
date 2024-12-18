@@ -1,0 +1,1 @@
+Modern AI development primarily relies on Python 3 along with essential tools like SQLite for data management and Git/GitHub for version control, with optional web technologies for building user interfaces and deploying AI applications.

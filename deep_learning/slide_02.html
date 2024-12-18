@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Slide 2</title>
+<style>
+    body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f9f9f9;
+    }
+    .slide-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 2rem;
+        box-sizing: border-box;
+    }
+    header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    header h1 {
+        font-size: 2rem;
+        margin: 0;
+        color: #333;
+    }
+    main {
+        max-width: 800px;
+        width: 100%;
+        background: #fff;
+        padding: 2rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    main h2 {
+        font-size: 1.5rem;
+        margin-top: 0;
+    }
+    main p {
+        line-height: 1.6;
+        margin-bottom: 1em;
+        color: #444;
+    }
+    footer {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+        color: #555;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <header>
+        <h1>Introduction to Deep Learning</h1>
+    </header>
+    <main>
+        <h2>Neurons and Activation Functions</h2>
+
+<p>Artificial neurons are the basic building blocks of neural networks, inspired by biological neurons in the brain. They consist of:</p>
+
+<ul>
+    <li>Inputs (x): Data values entering the neuron</li>
+    <li>Weights (w): Learnable parameters that determine input importance</li>
+    <li>Bias (b): An additional learnable parameter</li>
+    <li>Activation function: A non-linear transformation of the weighted sum</li>
+</ul>
+
+<p>Common activation functions include:</p>
+
+<ul>
+    <li><strong>ReLU (Rectified Linear Unit)</strong>: Most popular, f(x) = max(0,x)</li>
+    <li><strong>Sigmoid</strong>: Outputs between 0 and 1, useful for binary classification</li>
+    <li><strong>Tanh</strong>: Outputs between -1 and 1, often used in hidden layers</li>
+</ul>
+
+<p>The activation function introduces non-linearity, allowing neural networks to learn complex patterns and relationships in data.</p>
+    </main>
+    <footer>
+        
+    </footer>
+</div>
+</body>
+</html>
+

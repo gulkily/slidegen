@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Slide 4</title>
+<style>
+    body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f9f9f9;
+    }
+    .slide-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 2rem;
+        box-sizing: border-box;
+    }
+    header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    header h1 {
+        font-size: 2rem;
+        margin: 0;
+        color: #333;
+    }
+    main {
+        max-width: 800px;
+        width: 100%;
+        background: #fff;
+        padding: 2rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    main h2 {
+        font-size: 1.5rem;
+        margin-top: 0;
+    }
+    main p {
+        line-height: 1.6;
+        margin-bottom: 1em;
+        color: #444;
+    }
+    footer {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+        color: #555;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <header>
+        <h1>Introduction to Deep Learning</h1>
+    </header>
+    <main>
+        <div class="slide">
+    <h2>Backpropagation and Gradient Descent</h2>
+    
+    <p>Backpropagation and Gradient Descent are fundamental algorithms for training neural networks:</p>
+    
+    <div class="main-points">
+        <ul>
+            <li><strong>Backpropagation:</strong> An algorithm that calculates gradients by propagating errors backward through the network, efficiently determining how each weight and bias contributes to the overall error.</li>
+            
+            <li><strong>Gradient Descent:</strong> An optimization algorithm that iteratively adjusts network parameters (weights and biases) in the direction that minimizes the loss function.</li>
+        </ul>
+    </div>
+    
+    <div class="key-concepts">
+        <h3>Key Components:</h3>
+        <ul>
+            <li><strong>Loss Function:</strong> Measures the difference between predicted and actual outputs</li>
+            <li><strong>Learning Rate:</strong> Controls the size of parameter updates during training</li>
+            <li><strong>Iterations:</strong> Multiple passes through the data to gradually improve network performance</li>
+        </ul>
+    </div>
+    
+    <p class="note">Together, these algorithms enable neural networks to learn from training data by systematically reducing prediction errors.</p>
+</div>
+    </main>
+    <footer>
+        
+    </footer>
+</div>
+</body>
+</html>
+
