@@ -89,12 +89,21 @@ def insert_into_template(course_title, slide_title, slide_content, footer_notes=
     return filled
 
 def main():
+    # Add argument parsing for output directory
+    output_dir = None
+    if len(sys.argv) > 1:
+        output_dir = Path(sys.argv[1])
+        
     course_title, topics = parse_config("course_config.txt")
     
-    # Create shorter directory name from first few words of course title
-    words = course_title.lower().split()[:3]  # Take first 3 words
-    dir_name = '_'.join(words).replace(":", "").replace("-", "_")
-    slides_dir = Path(dir_name)
+    if output_dir is None:
+        # Create shorter directory name from first few words of course title
+        words = course_title.lower().split()[:3]  # Take first 3 words
+        dir_name = '_'.join(words).replace(":", "").replace("-", "_")
+        slides_dir = Path(dir_name)
+    else:
+        slides_dir = output_dir
+        
     slides_dir.mkdir(exist_ok=True)
 
     # Ensure summary_stack.txt exists in the slides directory
