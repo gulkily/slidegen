@@ -1,0 +1,22 @@
+# Environment files
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+
+# Temporary files
+input.txt
+output.txt
+slide_content.html
+slide_summary.txt
+summary_stack.txt
+
+# Generated slide files
+slide_*.html
+combined_slides.html
