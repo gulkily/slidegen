@@ -6,24 +6,72 @@ from pathlib import Path
 
 def parse_config(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
-        lines = f.read().strip().split('\n')
+        content = f.read().strip()
+
+    # Extract course title - look for various formats
+    title_patterns = [
+        r"Course Title:\s*(.*?)(?:\n|$)",  # Standard format
+        r"Title:\s*(.*?)(?:\n|$)",         # Shorter format
+        r"^#\s*(.*?)(?:\n|$)",             # Markdown H1 format
+        r"^=+\s*(.*?)\s*=+\s*$"            # Underlined format
+    ]
     
     course_title = None
+    for pattern in title_patterns:
+        match = re.search(pattern, content, re.MULTILINE)
+        if match:
+            course_title = match.group(1).strip()
+            break
+    
+    if not course_title:
+        # If no title found, use first non-empty line
+        course_title = next((line.strip() for line in content.split('\n') 
+                           if line.strip()), "Untitled Course")
+
+    # Extract topics using various patterns
     topics = []
-    for line in lines:
-        if line.startswith("Course Title:"):
-            course_title = line.replace("Course Title:", "").strip()
-        elif line.strip() and not line.startswith("Course Title:"):
-            # Lines after "Topics:" are the slide topics
-            if not line.lower().startswith("topics:"):
-                # Try to extract topic text after numbering
-                # e.g. "1. Overview of Deep Learning"
-                match = re.match(r'\d+\.\s*(.*)', line.strip())
-                if match:
-                    topics.append(match.group(1).strip())
-                else:
-                    # If there's a line not matching numbering, just take as is
-                    topics.append(line.strip())
+    lines = content.split('\n')
+    
+    # Skip header section (everything before first blank line)
+    content_start = 0
+    for i, line in enumerate(lines):
+        if not line.strip():
+            content_start = i + 1
+            break
+
+    for line in lines[content_start:]:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Skip common section headers
+        if re.match(r'^(Part|Section|Module|Chapter)\s+\d+:', line, re.I):
+            continue
+            
+        # Try various content patterns
+        content = None
+        patterns = [
+            r'^\d+\.\s*(.*)',           # Numbered: "1. Topic"
+            r'^[-*•]\s*(.*)',           # Bullet points
+            r'^[A-Z])\s*(.*)',          # Letter bullets: "A) Topic"
+            r'(?:Topic|Session):\s*(.*)',# Labeled lines
+        ]
+        
+        for pattern in patterns:
+            match = re.match(pattern, line)
+            if match:
+                content = match.group(1).strip()
+                break
+                
+        # If no pattern matched but line has content, include it
+        if not content and line:
+            # Skip common headers/labels
+            if not re.match(r'^(Overview|Summary|Notes?|Objectives?):', line, re.I):
+                content = line
+
+        if content:
+            topics.append(content)
+
     return course_title, topics
 
 def generate_slide_prompt(course_title, summary_stack, topic):
