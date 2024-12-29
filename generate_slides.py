@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import sys
 
 def parse_config(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -50,7 +51,11 @@ def run_prompt_through_anthropic(input_text, output_file, temperature=0.7):
         f.write(input_text.strip())
     # Call the anthropic processor
     cmd = ["python", "anthropic_file_processor.py", "-i", "input.txt", "-o", output_file, "-t", str(temperature)]
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        print("Error: anthropic_file_processor.py failed")
+        sys.exit(1)
     # Read the output
     with open(output_file, 'r', encoding='utf-8') as f:
         return f.read().strip()
@@ -103,4 +108,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
