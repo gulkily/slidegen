@@ -49,6 +49,85 @@ import json
 from pathlib import Path
 import glob
 
+class CourseManager:
+	def __init__(self, base_dir: Path):
+		"""
+		Initialize course manager with base directory for all courses
+
+		Args:
+			base_dir (Path): Base directory where all courses will be stored
+		"""
+		self.base_dir = Path(base_dir)
+		self.courses_dir = self.base_dir / "courses"
+		self.courses_dir.mkdir(parents=True, exist_ok=True)
+
+	def create_course_directory(self, course_id: str) -> Path:
+		"""
+		Create directory structure for a new course
+
+		Args:
+			course_id (str): Unique identifier for the course
+
+		Returns:
+			Path: Path to the course directory
+		"""
+		course_dir = self.courses_dir / self._sanitize_id(course_id)
+		course_dir.mkdir(parents=True, exist_ok=True)
+
+		# Create subdirectories for course assets
+		(course_dir / "slides").mkdir(exist_ok=True)
+		(course_dir / "config").mkdir(exist_ok=True)
+		(course_dir / "temp").mkdir(exist_ok=True)
+
+		return course_dir
+
+	def _sanitize_id(self, course_id: str) -> str:
+		"""
+		Sanitize course ID to be filesystem friendly
+
+		Args:
+			course_id (str): Raw course ID
+
+		Returns:
+			str: Sanitized course ID
+		"""
+		# Replace spaces and special characters with underscores
+		sanitized = re.sub(r'[^\w\-]', '_', course_id)
+		return sanitized.lower()
+
+	def get_course_path(self, course_id: str) -> Path:
+		"""
+		Get path to course directory
+
+		Args:
+			course_id (str): Course identifier
+
+		Returns:
+			Path: Path to course directory
+		"""
+		return self.courses_dir / self._sanitize_id(course_id)
+
+	def list_courses(self) -> list[dict]:
+		"""
+		List all courses in the base directory
+
+		Returns:
+			list[dict]: List of course information dictionaries
+		"""
+		courses = []
+		for course_dir in self.courses_dir.iterdir():
+			if course_dir.is_dir():
+				config_file = course_dir / "config" / "course_config.txt"
+				if config_file.exists():
+					title, _ = parse_config(str(config_file))
+					courses.append({
+						"id": course_dir.name,
+						"title": title,
+						"path": str(course_dir),
+						"slides_count": len(list((course_dir / "slides").glob("*.html")))
+					})
+		return courses
+
 def parse_config(file_path):
 	"""
 	Parses course configuration file to extract title and topics.
@@ -326,157 +405,147 @@ def get_next_slide_number(slides_dir):
 	return max(numbers) + 1
 
 def main():
-	"""
-	Main execution flow:
-	1. Parse arguments
-	2. Set up output directory
-	3. Parse course config
-	4. Generate slides for each topic
-	5. Handle interruptions for resumability
-	"""
-	parser = argparse.ArgumentParser(description='Generate slides from course config')
-	parser.add_argument('--output-dir', '-o', type=str, help='Output directory for slides')
-	parser.add_argument('--test', action='store_true', help='Test mode - only generate 5 slides')
-	parser.add_argument('--temperature', type=float, default=0.7,
-					   help='Temperature for AI responses (0.0-1.0)')
-
+	parser = argparse.ArgumentParser(description='Generate slides from course outline')
+	parser.add_argument('--course-id', help='Unique identifier for the course')
+	parser.add_argument('--config', help='Path to course configuration file')
+	parser.add_argument('--base-dir', default='./slidegen_courses', help='Base directory for all courses')
+	parser.add_argument('--test-mode', action='store_true', help='Generate only 5 slides for testing')
+	parser.add_argument('--list-courses', action='store_true', help='List all available courses')
 	args = parser.parse_args()
-	
-	# Initialize cumulative stats
-	cumulative_stats = {
-		"input_tokens": 0,
-		"output_tokens": 0,
-		"total_tokens": 0,
-		"total_cost": 0.0
+
+	# Initialize course manager
+	course_manager = CourseManager(args.base_dir)
+
+	# Handle list-courses command
+	if args.list_courses:
+		courses = course_manager.list_courses()
+		if not courses:
+			print("\nNo courses found. Create a new course with --course-id and --config options.")
+			return
+
+		print("\nAvailable Courses:")
+		print("-" * 80)
+		print(f"{'ID':<20} {'Title':<40} {'Slides':<10}")
+		print("-" * 80)
+		for course in courses:
+			print(f"{course['id']:<20} {course['title'][:38]:<40} {course['slides_count']:<10}")
+		print("\nTo generate slides for a course, use:")
+		print("python generate_slides.py --course-id <course_id>")
+		return
+
+	if not args.course_id:
+		print("Error: --course-id is required")
+		return
+
+	# Create course directory structure
+	course_dir = course_manager.create_course_directory(args.course_id)
+
+	# If config file is provided, copy it to the course directory
+	if args.config:
+		config_src = Path(args.config)
+		if not config_src.exists():
+			print(f"Error: Config file {args.config} not found")
+			return
+		config_dest = course_dir / "config" / "course_config.txt"
+		if not config_dest.exists():
+			import shutil
+			shutil.copy2(config_src, config_dest)
+
+	# Set up paths
+	config_file = course_dir / "config" / "course_config.txt"
+	slides_dir = course_dir / "slides"
+	temp_dir = course_dir / "temp"
+
+	if not Path(config_file).exists():
+		print(f"Error: Course configuration file not found: {config_file}")
+		sys.exit(1)
+
+	# Parse course configuration
+	course_title, topics = parse_config(config_file)
+
+	# Save course info
+	course_info = {
+		"id": args.course_id,
+		"title": course_title,
+		"config_file": str(config_file),
+		"total_topics": len(topics)
 	}
+	with open(course_dir / "config" / "course_info.json", 'w') as f:
+		json.dump(course_info, f, indent=2)
 
-	# Check for API key
-	if not os.getenv('ANTHROPIC_API_KEY'):
-		print("Error: ANTHROPIC_API_KEY environment variable not set")
-		sys.exit(1)
+	# Get next slide number
+	next_slide = get_next_slide_number(slides_dir)
 
-	output_dir = args.output_dir
+	# Initialize summary stack for context
+	summary_stack = []
 
-	if output_dir:
-		output_dir = Path(output_dir)
+	# Read previous summaries if resuming
+	summary_file = slides_dir / "summaries.json"
+	if summary_file.exists():
+		with open(summary_file, 'r') as f:
+			summary_stack = json.load(f)
 
+	# Generate slides
 	try:
-		course_title, topics = parse_config("course_config.txt")
-	except FileNotFoundError:
-		print("Error: course_config.txt not found")
-		sys.exit(1)
-	except Exception as e:
-		print(f"Error parsing course config: {e}")
-		sys.exit(1)
-
-	if output_dir is None:
-		# Create shorter directory name from first few words of course title
-		words = course_title.lower().split()[:3]  # Take first 3 words
-		dir_name = '_'.join(words).replace(":", "").replace("-", "_")
-		slides_dir = Path(dir_name)
-
-		# Ensure we don't clobber existing directory
-		counter = 1
-		original_dir = slides_dir
-		while slides_dir.exists():
-			slides_dir = Path(f"{original_dir}_{counter}")
-			counter += 1
-	else:
-		slides_dir = output_dir
-
-	# Create slides directory and all parent directories
-	slides_dir.mkdir(parents=True, exist_ok=True)
-	print(f"\nGenerating slides in: {slides_dir.absolute()}")
-
-	# Initialize summary stack file
-	summary_stack_path = slides_dir / "summary_stack.txt"
-	if not summary_stack_path.exists():
-		summary_stack_path.touch()
-
-	# Get the next slide number to start from
-	slide_counter = get_next_slide_number(slides_dir)
-	
-	try:
-		for topic_num, topic in enumerate(topics, start=slide_counter):
-			# Check if we've hit the test mode limit
-			if args.test and slide_counter > 5:
-				print("\nTest mode: Stopping after 5 slides")
+		for i, topic in enumerate(topics[next_slide-1:], start=next_slide):
+			if args.test_mode and i > 5:
 				break
 
-			print(f"\nGenerating slide {slide_counter} for topic: {topic}")
-			
+			print(f"\nGenerating slide {i} for topic: {topic}")
+
 			# Generate slide content
-			prompt = generate_slide_prompt(course_title, "", topic)
-			content_file = slides_dir / f"slide_{slide_counter:03d}_content.txt"
-			content = run_prompt_through_anthropic(prompt, content_file, args.temperature)
-			
-			# Update cumulative stats if available
-			stats_file = slides_dir / 'stats.json'
-			if stats_file.exists():
-				with open(stats_file) as f:
-					stats = json.load(f)
-					cumulative_stats["input_tokens"] += stats["input_tokens"]
-					cumulative_stats["output_tokens"] += stats["output_tokens"]
-					cumulative_stats["total_tokens"] += stats["total_tokens"]
-					cumulative_stats["total_cost"] += stats["total_cost"]
-			
-			if content is None:
-				print(f"Warning: Skipping topic {topic_num} due to content generation failure")
+			prompt = generate_slide_prompt(course_title, summary_stack, topic)
+			response_file = temp_dir / f"response_{i}.txt"
+
+			success = run_prompt_through_anthropic(prompt, response_file)
+			if not success:
+				print(f"Error generating slide {i}")
 				continue
 
-			# Generate summary for context
-			summary_prompt = summarize_slide_prompt(content)
-			summary_file = slides_dir / f"slide_{slide_counter:03d}_summary.txt"
-			summary = run_prompt_through_anthropic(summary_prompt, summary_file, args.temperature)
-			
-			# Update cumulative stats for summary if available
-			if stats_file.exists():
-				with open(stats_file) as f:
-					stats = json.load(f)
-					cumulative_stats["input_tokens"] += stats["input_tokens"]
-					cumulative_stats["output_tokens"] += stats["output_tokens"]
-					cumulative_stats["total_tokens"] += stats["total_tokens"]
-					cumulative_stats["total_cost"] += stats["total_cost"]
-			
-			if summary:
-				with open(summary_stack_path, 'a', encoding='utf-8') as f:
-					f.write(summary + "\n")
+			# Read response
+			with open(response_file, 'r') as f:
+				slide_content = f.read().strip()
 
-			# Create HTML slide
-			slide_html = insert_into_template(course_title, topic, content)
-			with open(slides_dir / f"slide_{slide_counter:03d}.html", 'w', encoding='utf-8') as f:
-				f.write(slide_html)
-			
-			slide_counter += 1
-			
+			if slide_content == "TOPIC_CLARIFICATION_NEEDED":
+				print(f"Warning: AI needs clarification for topic: {topic}")
+				continue
+
+			# Split content if needed and create slides
+			slide_parts = slide_content.split("<!--SPLIT_SLIDE_HERE-->")
+			for j, part in enumerate(slide_parts, start=1):
+				slide_number = f"{i:03d}"
+				if len(slide_parts) > 1:
+					slide_number += f"_{j}"
+
+				slide_file = slides_dir / f"slide_{slide_number}.html"
+				with open(slide_file, 'w') as f:
+					f.write(insert_into_template(course_title, topic, part.strip()))
+
+				# Generate and save summary
+				summary_prompt = summarize_slide_prompt(part.strip())
+				summary_response_file = temp_dir / f"summary_{slide_number}.txt"
+
+				if run_prompt_through_anthropic(summary_prompt, summary_response_file):
+					with open(summary_response_file, 'r') as f:
+						summary = f.read().strip()
+						if summary != "CONTENT_CLARIFICATION_NEEDED":
+							summary_stack.append(summary)
+
+							# Save updated summaries
+							with open(summary_file, 'w') as f:
+								json.dump(summary_stack, f, indent=2)
+
+			# Clean up temporary files
+			for temp_file in temp_dir.glob(f"*_{i}*.txt"):
+				temp_file.unlink()
+
 	except KeyboardInterrupt:
-		print("\nInterrupted! Progress saved - you can resume from the last completed slide.")
-	
-	# Print final usage statistics
-	print("\nFinal Usage Statistics:")
-	print(f"Total input tokens:  {cumulative_stats['input_tokens']:,}")
-	print(f"Total output tokens: {cumulative_stats['output_tokens']:,}")
-	print(f"Total tokens:        {cumulative_stats['total_tokens']:,}")
-	print(f"Total cost:          ${cumulative_stats['total_cost']:.4f}")
-	
-	# Save final stats
-	stats_file = slides_dir / 'final_stats.json'
-	with open(stats_file, 'w') as f:
-		json.dump(cumulative_stats, f, indent=2)
-	
-	# Print summary of output files
-	print(f"\nOutput Files:")
-	print(f"Slides directory:  {slides_dir.absolute()}")
-	print(f"HTML slides:       {slides_dir.absolute()}/*.html")
-	print(f"Content files:     {slides_dir.absolute()}/*_content.txt")
-	print(f"Summary files:     {slides_dir.absolute()}/*_summary.txt")
-	print(f"Usage statistics:  {stats_file.absolute()}")
-	
-	# Print how to view the slides
-	print(f"\nTo view the slides:")
-	print(f"1. Open any web browser")
-	print(f"2. Navigate to: {slides_dir.absolute()}")
-	print(f"3. Open slide_001.html to begin")
+		print("\nGeneration interrupted. Progress has been saved.")
+		print(f"Resume from slide {next_slide} next time.")
+		sys.exit(0)
+
+	print("\nSlide generation complete!")
+	print(f"Generated slides are in: {slides_dir}")
 
 if __name__ == "__main__":
 	main()
