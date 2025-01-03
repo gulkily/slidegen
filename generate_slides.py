@@ -172,8 +172,12 @@ def parse_config(file_path):
 		if not line:
 			continue
 
-		# Skip common section headers
-		if re.match(r'^(Part|Section|Module|Chapter)\s+\d+:', line, re.I):
+		# Skip separator lines
+		if re.match(r'^[-=_*]{3,}$', line):
+			continue
+
+		# Skip common section headers without content
+		if re.match(r'^(Part|Section|Module|Chapter)\s+\d+:$', line, re.I):
 			continue
 
 		# Try various content patterns
@@ -193,8 +197,8 @@ def parse_config(file_path):
 
 		# If no pattern matched but line has content, include it
 		if not content and line:
-			# Skip common headers/labels
-			if not re.match(r'^(Overview|Summary|Notes?|Objectives?):', line, re.I):
+			# Skip common headers/labels without content
+			if not re.match(r'^(Overview|Summary|Notes?|Objectives?):\s*$', line, re.I):
 				content = line
 
 		if content:
@@ -251,7 +255,7 @@ def run_prompt_through_anthropic(input_text, output_file, temperature=0.7, max_r
 	Includes retry logic for failed attempts.
 	"""
 	output_dir = output_file.parent
-	
+
 	# Write prompt to input.txt in slides directory
 	input_file = output_dir / 'input.txt'
 	with open(input_file, 'w', encoding='utf-8') as f:
@@ -259,7 +263,7 @@ def run_prompt_through_anthropic(input_text, output_file, temperature=0.7, max_r
 
 	# Create stats file path in slides directory
 	stats_file = output_dir / 'stats.json'
-	
+
 	# Call the anthropic processor
 	cmd = ["python", "anthropic_file_processor.py",
 		   "-i", str(input_file),
@@ -400,7 +404,7 @@ def get_next_slide_number(slides_dir):
 	slide_files = glob.glob(str(slides_dir / "slide_*.html"))
 	if not slide_files:
 		return 1
-	
+
 	numbers = [int(re.search(r'slide_(\d+)\.html', f).group(1)) for f in slide_files]
 	return max(numbers) + 1
 
